@@ -19,9 +19,14 @@ return new class extends Migration
             $table->string('title');
             $table->string('content');
             $table->boolean('picture_exists')->default(0);
-            $table->integer('likes')->default(value: 0);
+
+            $table->integer('gross_votes')->default(value: 0)->nullable();
+            $table->integer('upvotes')->default(0)->nullable();
+            $table->integer('downVotes')->default(0)->nullable();
+
             $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
             $table->foreignIdFor(Tag::class);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

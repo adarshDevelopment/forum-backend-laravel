@@ -14,13 +14,22 @@ use \Illuminate\Support\Facades\Hash;
 class AuthController extends RootController
 {
 
+    public function getUser()
+    {
+        // return 'inside getUser laravel';
+        $user = request()->user();
+        if (!$user) {
+            return $this->sendError('Error fetching user');
+        }
+        return $this->sendSuccess('User successfully fetched', 'user', items: $user);
+    }
     public function register(Request $request)
     {
         // validate requests
         $validatedFields = $request->validate([
             'email' => 'email|unique:users',
-            'name' => 'required|string|max:255',
-            'password' => 'required|confirmed|min:6|string'
+            'username' => 'required|unique:users|string|max:255|min:8',
+            'password' => 'required|confirmed|min:6|string|max:20'
 
         ]);
 
@@ -28,9 +37,10 @@ class AuthController extends RootController
         // save on database and save on instance on $user
 
         // $user = DB::table('users')->insert($request->all());
+        // $user = User::create($validatedFields);
         $user = User::create([
             'email' => $validatedFields['email'],
-            'name' => $validatedFields['name'],
+            'username' => $validatedFields['username'],
             'password' => Hash::make($validatedFields['password'])
         ]);
         if (!$user) {
@@ -39,13 +49,14 @@ class AuthController extends RootController
         }
 
         // create and send token
-        $token = $user->createToken($user->name);
+        $token = $user->createToken($user->username);
         return $this->sendSuccess('User successfully registered from extension.', 'token', $token->plainTextToken);
         // return response()->json(['token' => $token->plainTextToken], 200);
     }
 
     public function login(Request $request)
     {
+        // return $request;
         // validate request
         $validatedFields = $request->validate([
             'email' => 'required|email',
@@ -60,7 +71,7 @@ class AuthController extends RootController
         }
 
         // create and send token
-        $token = $user->createToken($user->name);
+        $token = $user->createToken($user->username);
         return $this->sendSuccess('User successfully logged in.', 'token', $token->plainTextToken);
         // return response()->json(['token' => $token->plainTextToken], 200);
     }

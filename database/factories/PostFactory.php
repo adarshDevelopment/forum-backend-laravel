@@ -20,9 +20,10 @@ class PostFactory extends Factory
     {
         return [
             'title' => $this->faker->sentence(),
-            'content' => $this->faker->paragraph(),
+            'slug' => $this->faker->slug(),
+            'content' => $this->faker->paragraph(1),
             'picture_exists' => random_int(0, 1),
-            'likes' => random_int(-10, 50),
+            // 'likes' => random_int(-10, 50),
             'user_id' => random_int(1, 10),        // will automatically create a new user
             'tag_id' => random_int(1, 10),
 

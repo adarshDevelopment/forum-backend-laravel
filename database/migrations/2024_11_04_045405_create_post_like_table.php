@@ -15,9 +15,11 @@ return new class extends Migration
     {
         Schema::create('post_like', function (Blueprint $table) {
             $table->id();
-            $table->integer('likes')->default(0);
+            // $table->integer('likes')->default(0);
+            $table->boolean('upvote_status')->default(false);
             $table->foreignIdFor(Post::class)->constrained()->cascadeOnDelete();
             $table->foreignIdFor(User::class);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
@@ -30,3 +32,19 @@ return new class extends Migration
         Schema::dropIfExists('post_like');
     }
 };
+
+
+/*
+    if record not found:
+        create new record and insert true or false ofr upvote_status
+
+    if record found:
+        if existing record is true and so is the request, delete the record
+        
+        if existing value and new vlaues are different, change the existing value to opposite of it 
+
+
+
+    total likes: total records of the post and calculate the likes 
+
+*/

@@ -16,9 +16,14 @@ return new class extends Migration
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
             $table->text('comment');
-            $table->integer('likes')->default(0);
+
+            $table->integer('gross_votes')->default(0);
+            $table->integer('upvotes')->default(0)->nullable();
+            $table->integer('downvotes')->default(0)->nullable();
+
             $table->foreignIdFor(Post::class);
             $table->foreignIdFor(User::class);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

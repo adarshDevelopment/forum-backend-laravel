@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class PostLike extends Model
 {
-    protected $table = 'likes';
+    protected $table = 'post_like';
     protected $fillable = [
         'likes',
         'post_id',
-        'user_id'
+        'user_id',
+        
     ];
 }

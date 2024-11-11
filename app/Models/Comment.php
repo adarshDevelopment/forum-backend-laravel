@@ -15,4 +15,10 @@ class Comment extends Model
         'likes',
         'user_id'
     ];
+
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

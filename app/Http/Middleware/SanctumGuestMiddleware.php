@@ -19,6 +19,7 @@ class SanctumGuestMiddleware
     {
         // if logged in send an error message as json response
         // can use request()->user? to check login status as well
+
         if (Auth::guard('sanctum')->check()) {
             return response()->json(['status' => false, 'message' => 'Cannot access this page wile the user is still logged in']);
         }

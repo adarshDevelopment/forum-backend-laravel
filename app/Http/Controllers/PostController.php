@@ -4,13 +4,45 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PostRequest;
 use App\Models\Post;
+use App\Models\PostLike;
 use Database\Seeders\PostSeeder;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Nette\Utils\Random;
 
 class PostController extends RootController
 {
+
+    /*
+        Remaining:
+        1. apply middleware for store, update, deltee and upvote
+        2. picture insertion, update and deletion
+
+
+    public static function middleware()
+    {
+        return [
+            new Middleware('auth:sanctum', except: ['index'])
+        ];
+    }
+    */
+
     // apply middleware for store, update, and delete and not for index
+
+    private $user;
+
+
+
+
+    public function __construct()
+    {
+        $this->user = request()->user();
+        // $this->middleware('auth:sanctum')->except('index');
+
+    }
 
     public function index()
     {
@@ -57,7 +89,8 @@ class PostController extends RootController
 
         // pictures does not exist for now. likes is set to 0 by default
         // create post
-        if (!Post::create($request->all())) {
+
+        if ($this->user->posts()->create($request->all())) {
             $this->sendError('Error createing post!', 500);
         }
 
@@ -69,7 +102,7 @@ class PostController extends RootController
         // Remaining: pictures
 
         // if picture does not exist
-        $post = Post::where('slug', $request->slug)->first();
+        $post = $this->user->posts()->where('slug', $request->slug)->first();
 
         if (!$post) {
             $this->sendError('Post not found', 404);
@@ -79,9 +112,19 @@ class PostController extends RootController
     }
 
 
+
+    // Route model binding alternate way. check CommentController destory function
     public function destroy(Request $request)
     {
         // Remaining: delete post pictures
+
+        // only the user who created the post can delete their post and none else 
+
+        /*
+        ***** Using gates *****
+        $post = $this->user->posts()->where('slug', $request->slug)->first();
+        Gate::authorize('authorize-user', $post);
+        */
 
         $post = Post::where('slug', $request->slug)->first();
         if (!$post) {
@@ -91,6 +134,7 @@ class PostController extends RootController
         /*
                     Delete post pictures here
         */
+
 
 
         if (!$post->delete()) {
@@ -104,29 +148,70 @@ class PostController extends RootController
 
     public function upvote(Request $request)
     {
-        $post = Post::where('slug', $request->slug)->first();
+        // find the post
+        $post = Post::find($request->post_id);
         if (!$post) {
             $this->sendError('Post not found', 404);
         }
-        $post->likes++;
 
-        if (!$post->update()) {
-            $this->sendError('Error upvoting post');
-        }
-        $this->sendSuccess('Post successfully upvoted');
+        $upvoteStatus = $request->upvoteStatus ? true : false;
+
+        // find existing record
+        $likedRecord = PostLike::where('post_id', $post->id)
+            ->where('user_id', $this->user->id)
+            ->first();
+
+        $result = DB::transaction(function () use ($likedRecord, $post, $upvoteStatus) {
+
+            //  create new entry if no prior entry exists
+            if (!$likedRecord) {
+                if (!PostLike::create([
+                    'upvote_status' => $upvoteStatus,
+                    'post_id' => $post->id,
+                    'user_id' => $this->user->id,
+                    'is_active' => true
+                ])) {
+                    return false;
+                }
+            }
+
+            // if prior entry exists and 
+            // if user tries to upvote or downvote twice, simply delete the record
+            if ($likedRecord->upvote_status == $upvoteStatus) {
+                if (!$likedRecord->delete()) {
+                    return false;
+                }
+            }
+
+            // if differnet value comes, change it 
+            if (!$likedRecord->update(['upvote_status' => $upvoteStatus])) {
+                return false;
+            }
+
+            $totalUpvotes = PostLike::where('post_id', $post->id)
+                ->where('update_status', true)->count();
+
+            $totalDownVotes = PostLike::where('post_id', $post->id)
+                ->where('upvote_status', false)->count();
+
+            $grossTotalVotes = $totalUpvotes - $totalDownVotes;
+
+            if (
+                $post->update([
+                    'gross_votes' => $grossTotalVotes,
+                    'upvotes' => $totalUpvotes,
+                    'downvotes' => $totalDownVotes
+                ])
+            ) {
+                return false;
+            }
+            return true;
+        });
+
+        return $result
+            ? $this->sendSuccess('Post successfully voted')
+            : $this->sendError('Erro votting for post');
     }
 
-    public function downVote(Request $request)
-    {
-        $post = Post::where('slug', $request->slug)->first();
-        if (!$post) {
-            $this->sendError('Post not found', 404);
-        }
-        $post->likes--;
-
-        if (!$post->update()) {
-            $this->sendError('Error upvoting post');
-        }
-        $this->sendSuccess('Post successfully downvoted');
-    }
+    public function getUpvotes() {}
 }

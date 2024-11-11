@@ -26,12 +26,73 @@ Explanation of Options:
 
 
 Laravel Authnetication
-    What Happens with Auth::check()?
+    # What Happens with Auth::check()?
         Session-based Authentication: If Auth::check() is called without specifying a guard, it will use the default guard (web for session-based) to check if a user is logged in through a session.
-    Token-based Authentication: 
+    # Token-based Authentication: 
         If you want to check if a user is logged in with a token, you can specify the sanctum guard (or whichever token-based guard is configured) by calling Auth::guard('sanctum')->check(). This will validate the token instead of checking the session.
 
     Summary
     Auth::check() by default checks for session-based authentication.
     Auth::guard('sanctum')->check() checks for token-based authentication, validating the access token.
     Guards allow Laravel to manage different authentication methods in one app, handling both session and token-based logins.
+
+    Apply middleware to constructor:
+        read from here
+        https://medium.com/@harrisrafto/advanced-controller-middleware-in-laravel-using-the-hasmiddleware-interface-31f4fbdb7288
+
+
+
+
+    # Check for authoraization. only let the user delete their personal comments/posts
+     
+        can use either authoraization, gater, or middleware   
+        paste the destroy function from CommentController on chatgpt and ask what other ways can it be done, besides doing it from within the controler.
+        ask to get it done through GATES, MIDDLEWARES AND POLICIES
+
+
+    # Laravel Guard:
+
+        Gate facade
+        Gate::define('delete-post', function(User $user, Post $post){
+            if(!$post->user()->is(Auth::user())){return false;}
+        })
+
+        No need to send user because Laravle automatically injects the dependency injection through its methods 
+        in controller:
+            Gate::authorize('delete-post', $post);      -> will automatically abort and send 403
+
+            if(Gate::allows('delete-post', $post)){     -> will not abort but instead only send boolean return type
+                // do other operations here
+            }
+
+            do this only after you provide your gates on AppServiceProvider
+
+    # Define Gates inside AppServiceProvider:
+        
+        create insdie Providers/AppServiceProvider
+
+        paste the logic insdie boot() function 
+
+        what i mean is only the function user() is defined in the Comment model class, but in the gate, object of the user is being called and not user() function, why is that? :
+        ans: Ah, I see what you’re asking! This is an interesting feature of Laravel's Eloquent ORM: dynamic properties. When you define a relationship method like user() in a model, Laravel automatically makes it accessible as a property (e.g., $comment->user) instead of requiring it to be called as a method (e.g., $comment->user()).
+
+
+
+
+
+
+    # Policies
+
+       
+
+
+
+
+
+             
+    things to do:
+    API:
+    1. post -> pictures remaining
+    2. comments -> almost all done
+    3. tags -> 
+    4. 
