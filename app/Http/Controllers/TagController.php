@@ -13,7 +13,7 @@ class TagController extends RootController
     {
         $tags = Tag::all();
 
-        return $this->sendSuccess('Tags successfully fetched', 'tags');
+        return $this->sendSuccess('Tags successfully fetched', 'tags', $tags);
     }
 
     public function store(TagRequest $request)

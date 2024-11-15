@@ -5,29 +5,28 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CommentRequest;
 use App\Models\Comment;
 use App\Models\CommentLike;
+use App\Models\Post;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CommentController extends RootController
 {
     private $user;
-    private function __construct()
+    public function __construct()
     {
-        $this->user = request()->user();
+        $this->user = auth('sanctum')->user();
+
+        if ($this->user) {      // doing this will reutrn elequoent instance which can be used to call in realationships functions, unlike before
+            $this->user = User::find($this->user->id);
+        }
     }
 
 
     /*
-        1. store  -> done 
-        2. update   -> done 
-        3. delete   -> done 
-        4. index    ->done
-        5. upvote & downvote  -> done 
-
         Remaining:
             none
-            
-
+        
     */
 
     public function index(Request $request)
@@ -39,8 +38,24 @@ class CommentController extends RootController
 
     public function store(CommentRequest $request)
     {
-        // creating record from the currently logged in user
-        $comment = $this->user->comments()->create($request->all());
+        // return $request->all();
+        $post = Post::where('slug', $request->slug)->first();
+        if (!$post) {
+            return $this->sendError('Post not found');
+        }
+
+        // return $request->all();
+        // creating record from the currently logged in user=
+        // return $this->user;
+        // return $this->user->comments;
+
+        // return $request->user()->comments()->create($request->all());
+        $comment = $this->user->comments()->create([
+            'comment' => $request->comment,
+            'post_id' => $post->id,
+            // 'user_id' => $this->user->id
+        ]);
+
         if (!$comment) {
             return $this->sendError('Error posting comment');
         }
@@ -51,7 +66,7 @@ class CommentController extends RootController
 
     public function update(CommentRequest $request)
     {
-        $comment = $this->user->comments()->find($request->id);
+        $comment = $this->user->comments->find($request->id);
         if (!$comment) {
             return $this->sendError('Comment not found', 404);
         }

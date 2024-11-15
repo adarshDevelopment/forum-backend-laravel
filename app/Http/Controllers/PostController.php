@@ -44,11 +44,33 @@ class PostController extends RootController
 
     }
 
+    public function show($slug)
+    {
+        $post = Post::where('slug', $slug)->first();
+        if (!$post) {
+            return $this->sendError(statusMessage: 'Post not found', statusCode: 404);
+        }
+
+        $comments = $post
+            ->comments()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $this->sendSuccess('Post successfully fetched', 'post', items: [
+            'post' => $post,
+            'user' => $post->user,
+            'tag' => $post->tag,
+            'comments' => $comments
+        ]);
+    }
     public function index()
     {
 
 
         $posts =  Post::orderBy('id', 'desc')->get();
+
+
 
         return $this->sendSuccess('Post successfully retrived', 'posts', $posts);
 
@@ -57,6 +79,8 @@ class PostController extends RootController
 
     public function store(PostRequest $request)
     {
+
+        // return $request->all();
         // remaining: pictures
 
         // operation for picture 
@@ -64,37 +88,59 @@ class PostController extends RootController
             [pictures here]
         */
 
-        // make slug unique. 
 
-        // slug part   replace spac e with _
-        $slug = $request->title . '_' . $request->user()->id;
+        // setting tag_id
+        if ($request->tag_id < 0) {
+            $request->merge(['tag_id' => null]);
+        }
 
+        // make slug unique.
+        $slug = str_replace(' ', '_',  rtrim($request->title)) . '_' . auth('sanctum')->user()->id;
+        $proxySlug = $slug;
+        $number = 1;
+        $count = 0;
         do {
             $found = false;
-            $number = 1;
-
-            $post = Post::where('slug', $slug)->get();
-            if ($post->isNotEmpty()) {
-                $slug = $slug . '_' . $number;
+            $post = Post::where('slug', $proxySlug)->get();
+            // return $post;
+            if ($post->isNotEmpty()) {      // if found
+                $proxySlug = $slug . '_' . str($number);
                 $found = true;
+                // return $slug;
+                // return $number;
+                $count++;
+                // return $count;
             } else {
                 $found = false;
             }
             $number++;
+            // return $number;
         } while ($found == true);
 
+        $slug = $proxySlug;
         $request->merge(['slug' => $slug]);         // adding new property to the request object
 
 
-
+        // return $request->all();
         // pictures does not exist for now. likes is set to 0 by default
         // create post
+        try {
+            // if (!$this->user->posts()->create($request->all())) {
+            $post = $this->user->posts()->create([
+                'title' => $request->title,
+                'slug' => $request->slug,
+                'content' => $request->content,
+                'tag_id' => $request->tag_id
 
-        if ($this->user->posts()->create($request->all())) {
-            $this->sendError('Error createing post!', 500);
+            ]);
+            if (!$post) {
+                return $this->sendError('Error createing post!', 500);
+            }
+
+            return $this->sendSuccess('Post successfully created', attribute: 'post', items: $post);
+        } catch (\Exception $e) {
+            return $this->sendError('Error creating post with exception', $e->getMessage(), 500);
         }
-
-        $this->sendSuccess('Post successfully created');
     }
 
     public function update(PostRequest $request)

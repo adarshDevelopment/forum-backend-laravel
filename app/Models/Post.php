@@ -11,6 +11,7 @@ class Post extends Model
     use HasFactory;
 
     protected $fillable = [
+        'slug',
         'title',
         'content',
         'picture_exists',
@@ -22,5 +23,15 @@ class Post extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function tag()
+    {
+        return $this->belongsTo(Tag::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
     }
 }

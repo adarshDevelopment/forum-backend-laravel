@@ -28,7 +28,7 @@ class AuthController extends RootController
         // validate requests
         $validatedFields = $request->validate([
             'email' => 'email|unique:users',
-            'username' => 'required|unique:users|string|max:255|min:8',
+            'name' => 'required|unique:users|string|max:255|min:8',
             'password' => 'required|confirmed|min:6|string|max:20'
 
         ]);
@@ -40,7 +40,7 @@ class AuthController extends RootController
         // $user = User::create($validatedFields);
         $user = User::create([
             'email' => $validatedFields['email'],
-            'username' => $validatedFields['username'],
+            'name' => $validatedFields['name'],
             'password' => Hash::make($validatedFields['password'])
         ]);
         if (!$user) {
@@ -49,7 +49,7 @@ class AuthController extends RootController
         }
 
         // create and send token
-        $token = $user->createToken($user->username);
+        $token = $user->createToken($user->name);
         return $this->sendSuccess('User successfully registered from extension.', 'token', $token->plainTextToken);
         // return response()->json(['token' => $token->plainTextToken], 200);
     }
@@ -71,7 +71,7 @@ class AuthController extends RootController
         }
 
         // create and send token
-        $token = $user->createToken($user->username);
+        $token = $user->createToken($user->name);
         return $this->sendSuccess('User successfully logged in.', 'token', $token->plainTextToken);
         // return response()->json(['token' => $token->plainTextToken], 200);
     }

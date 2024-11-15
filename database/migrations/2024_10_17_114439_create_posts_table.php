@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('slug')->unique();
             $table->string('title');
-            $table->string('content');
+            $table->text('content');
             $table->boolean('picture_exists')->default(0);
 
             $table->integer('gross_votes')->default(value: 0)->nullable();
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->integer('downVotes')->default(0)->nullable();
 
             $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
-            $table->foreignIdFor(Tag::class);
+            $table->foreignIdFor(Tag::class)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
