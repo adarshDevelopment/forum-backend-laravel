@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('comment_like', function (Blueprint $table) {
             $table->id();
-            $table->boolean('upvote_Statu')->default(false);
+            $table->boolean('upvote_status')->default(false);
             $table->foreignIdFor(Comment::class)->constrained()->cascadeOnDelete();
             $table->foreignIdFor(User::class);
             $table->boolean('is_active')->default(true);

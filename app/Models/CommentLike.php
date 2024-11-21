@@ -8,8 +8,8 @@ class CommentLike extends Model
 {
     protected $table = 'comment_like';
     protected $fillable = [
-        'likes',
         'comment_id',
-        'user_id'
+        'user_id',
+        'upvote_status'
     ];
 }

@@ -8,7 +8,9 @@ use App\Models\CommentLike;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CommentController extends RootController
 {
@@ -29,11 +31,20 @@ class CommentController extends RootController
         
     */
 
-    public function index(Request $request)
+    public function index($slug)
     {
-        $comments = Comment::where('post_id', $request->id)->get();
+        $post = Post::where('slug', $slug)->first();
 
-        $this->sendSuccess('Comments successfully fetched', 'comments', $comments);
+        $comments = Comment::where('post_id', $post->id)
+            ->with('user')
+            ->with('commentLike')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+
+        // return $comments;
+        // return $comments;
+        return $this->sendSuccess('Comments successfully fetched', 'comments', $comments);
     }
 
     public function store(CommentRequest $request)
@@ -44,7 +55,7 @@ class CommentController extends RootController
             return $this->sendError('Post not found');
         }
 
-        // return $request->all();
+        // return $request->all(); 
         // creating record from the currently logged in user=
         // return $this->user;
         // return $this->user->comments;
@@ -64,13 +75,15 @@ class CommentController extends RootController
     }
 
 
-    public function update(CommentRequest $request)
+    public function update(CommentRequest $request, $id)
     {
-        $comment = $this->user->comments->find($request->id);
+        // return $request->all();
+        $comment = $this->user->comments->find($id);
         if (!$comment) {
             return $this->sendError('Comment not found', 404);
         }
-        if (!$comment->update($request->all())) {
+        $comment->comment = $request->comment;
+        if (!$comment->update()) {
             return $this->sendError('Error editing comment');
         }
         return $this->sendSuccess('Comment successfully deleted');
@@ -91,47 +104,67 @@ class CommentController extends RootController
         return $this->sendSuccess('Comment successfully deleted');
     }
 
+
+
+
     public function upvote(Request $request)
     {
-        $comment = Comment::where('id', $request->comment_id)->first();
-
+        $comment = Comment::where('id', $request->comment_id)->with('commentLike')->first();
         if (!$comment) {
             return $this->sendError('Comment not found', 404);
         }
 
         $upvoteStatus = $request->upvoteStatus;
-
         // check for existing record
         $likedRecord = CommentLike
             ::where('user_id', $this->user->id,)
             ->where('comment_id', $comment->id)->first();
 
-
         $result = DB::transaction(function () use ($comment, $likedRecord, $upvoteStatus) {
-            // no prior records
-            if (!$likedRecord) {
-                if (CommentLike::create([
-                    'upvote_status' => $upvoteStatus,
-                    'user_id' => $this->user->id,
-                    'comment_id' => $comment->id
-                ])) {
-                    return false;
+            // no prior records, create one 
+            try {
+                if (!$likedRecord) {
+                    if (!CommentLike::create([
+                        'upvote_status' => $upvoteStatus,
+                        'user_id' => $this->user->id,
+                        'comment_id' => $comment->id
+                    ])) {
+                        return false;
+                    }
+                    $result = $this->calcualteUpvotes($comment);
+                    return $result;
                 }
+            } catch (\Exception $e) {
+                return false;
             }
 
             // if prior record exists and 
             // if the user is trying to upvote/downvote twice
             if ($likedRecord->upvote_status == $upvoteStatus) {
-                if ($likedRecord->delete()) {
+                if (!$likedRecord->delete()) {
+                    return false;
+                }
+            } else {
+                // if not same value, update and calcualte upvotes once again
+                if (!$likedRecord->update(['upvote_status' => $upvoteStatus])) {
                     return false;
                 }
             }
 
-            // if different values:
-            if (!$likedRecord->update(['upvote_status' => $upvoteStatus])) {
-                return false;
-            }
+            return $this->calcualteUpvotes($comment);
+        });
 
+        // fetching the new updated value of comment_like for fron-end
+        $comment = Comment::where('id', $request->comment_id)->with('commentLike')->first();
+
+        return $result
+            ? $this->sendSuccess('Comment successfully voted', 'updatedComment', $comment)
+            : $this->sendError('Error voting for comment');
+    }
+
+    public function calcualteUpvotes($comment)
+    {
+        try {
             // also save upvotes and downvotes on comments table... fetching total downvotes, upvotes and gross votes to insert it to the comment instance of the selected comment
             $totalUpvotes = CommentLike
                 ::where('comment_id', $comment->id)
@@ -145,18 +178,29 @@ class CommentController extends RootController
 
             $grossVotes = $totalUpvotes - $totalDownvotes;
 
+            Log::info('total upvotes: ' . $totalUpvotes . ' Total downvotes: ' . $totalDownvotes . ' gross votes: ' . $grossVotes);
             $comment->update([
                 'gross_votes' => $grossVotes,
-                'upvotes' => $totalDownvotes,
+                'upvotes' => $totalUpvotes,
                 'downvotes' => $totalDownvotes,
             ]);
-
-
             return true;
-        });
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 
-        return $result
-            ? $this->sendSuccess('Comment successfully voted')
-            : $this->sendError('Erro voting for comment');
+    public function getCommnetUpvotes($id)
+    {
+        $comment = Comment::find($id);
+        if (!$comment) {
+            return $this->sendError('Comment not found', 404);
+        }
+        $user = Auth::guard('sanctum')->user();
+        if (!$user) {   // if user not logged in, jsut send the upvotes and nothing else 
+            return $this->sendSuccess('Upvotes successfully fetched for the requested comment', 'comment', $comment);
+        }
+        // $likedComment = CommentLike::where('comment_id', $comment->id);
+        return $comment;
     }
 }

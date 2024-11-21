@@ -17,7 +17,10 @@ class Post extends Model
         'picture_exists',
         'likes',
         'user_id',
-        'tag_id'
+        'tag_id',
+        'upvotes',
+        'downvotes',
+        'gross_votes'
     ];
 
     public function user()

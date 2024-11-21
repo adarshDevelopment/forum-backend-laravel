@@ -11,6 +11,6 @@ class PostLike extends Model
         'likes',
         'post_id',
         'user_id',
-        
+        'upvote_status',
     ];
 }

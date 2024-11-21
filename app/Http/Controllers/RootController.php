@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 
 class RootController extends Controller
 {
-    public function sendError($statusMessage, $exceptionMessage = '', $statusCode = 500)
+    public function sendError($statusMessage, $statusCode = 500, $exceptionMessage = '',)
     {
         // if exception message does not exist, dont send key value
         if (!$exceptionMessage) {

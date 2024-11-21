@@ -6,11 +6,13 @@ use App\Http\Requests\PostRequest;
 use App\Models\Post;
 use App\Models\PostLike;
 use Database\Seeders\PostSeeder;
+use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Nette\Utils\Random;
 
 class PostController extends RootController
@@ -57,11 +59,14 @@ class PostController extends RootController
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // return $comments->count();
+
         return $this->sendSuccess('Post successfully fetched', 'post', items: [
             'post' => $post,
             'user' => $post->user,
             'tag' => $post->tag,
-            'comments' => $comments
+            'comments' => $comments,
+
         ]);
     }
     public function index()
@@ -139,7 +144,7 @@ class PostController extends RootController
 
             return $this->sendSuccess('Post successfully created', attribute: 'post', items: $post);
         } catch (\Exception $e) {
-            return $this->sendError('Error creating post with exception', $e->getMessage(), 500);
+            return $this->sendError('Error creating post with exception', exceptionMessage: $e->getMessage(), statusCode: 500);
         }
     }
 
@@ -148,67 +153,82 @@ class PostController extends RootController
         // Remaining: pictures
 
         // if picture does not exist
+
         $post = $this->user->posts()->where('slug', $request->slug)->first();
 
         if (!$post) {
             $this->sendError('Post not found', 404);
         }
 
-        $post->update($request->all());
+        if (!$post->update($request->all())) {
+            return $this->sendError('Error updating post',);
+        }
+
+        return $this->sendSuccess('Post successfully updated');
     }
 
 
 
     // Route model binding alternate way. check CommentController destory function
-    public function destroy(Request $request)
+    public function destroy(Post $post)
     {
+
         // Remaining: delete post pictures
 
         // only the user who created the post can delete their post and none else 
 
-        /*
-        ***** Using gates *****
-        $post = $this->user->posts()->where('slug', $request->slug)->first();
-        Gate::authorize('authorize-user', $post);
-        */
 
-        $post = Post::where('slug', $request->slug)->first();
-        if (!$post) {
-            $this->sendError('Post not found', 404);
+        // ***** Using gates *****
+        // $post = $this->user->posts()->where('slug', $request->slug)->first();
+        // Gate::authorize('authorize-user', $post);
+
+
+        if ($this->user->id != $post->user_id) {
+            return $this->sendError('The user is not authorized to delete this post.');
         }
 
+        // return 
+        if (!$post) {
+            return $this->sendError('Post not found', 404);
+        }
         /*
                     Delete post pictures here
         */
 
-
-
         if (!$post->delete()) {
-            $this->sendError('Error deleting post');
+            return $this->sendError('Error deleting post');
         }
 
 
-        $this->sendSuccess('Post successfully deleted');
+        return $this->sendSuccess('Post successfully deleted');
     }
 
 
     public function upvote(Request $request)
     {
-        // find the post
-        $post = Post::find($request->post_id);
+
+        // function expects post_id/post slug, upvote/downvote
+
+        if ($this->user->id != $request->user) {        // checking if the user sending the request is the currently logged in user
+            return $this->sendError('Unauthorized user', 403);
+        }
+
+        // find the post. if not found, send 404
+        // $post = Post::find($request->slug);
+        $post = Post::where('slug', $request->slug)->first();
         if (!$post) {
             $this->sendError('Post not found', 404);
         }
 
-        $upvoteStatus = $request->upvoteStatus ? true : false;
+        $upvoteStatus = $request->upvoteStatus ? true : false;      // downvote or upvote sent from the fontend
 
         // find existing record
         $likedRecord = PostLike::where('post_id', $post->id)
             ->where('user_id', $this->user->id)
             ->first();
 
-        $result = DB::transaction(function () use ($likedRecord, $post, $upvoteStatus) {
 
+        $result = DB::transaction(function () use ($likedRecord, $post, $upvoteStatus) {
             //  create new entry if no prior entry exists
             if (!$likedRecord) {
                 if (!PostLike::create([
@@ -222,28 +242,53 @@ class PostController extends RootController
             }
 
             // if prior entry exists and 
-            // if user tries to upvote or downvote twice, simply delete the record
-            if ($likedRecord->upvote_status == $upvoteStatus) {
-                if (!$likedRecord->delete()) {
+            // if user tries to upvote or downvote twice, simply delete the record. unlike, un-dislike 
+            if ($likedRecord) {
+                if ($likedRecord->upvote_status == $upvoteStatus) {
+                    if (!$likedRecord->delete()) {
+                        return false;
+                    }
+
+                    // calculaate upvote and udpat evalues on post table
+                    return $this->calculateUpvotes($post);
+                }
+
+                // if user has entered a different value 
+                if (!$likedRecord->update(['upvote_status' => $upvoteStatus])) {
                     return false;
                 }
             }
 
-            // if differnet value comes, change it 
-            if (!$likedRecord->update(['upvote_status' => $upvoteStatus])) {
-                return false;
-            }
+            return $this->calculateUpvotes($post);            // return true or false depending on the return value of calculateUvptes
+        });
 
+        if (!$result) {
+            $this->sendError('Error voting for post');
+        }
+
+        return $this->sendSuccess('Post successfully upvoted. here is the fetched post data', 'post', $post);
+        // return $result
+        //     ? $this->sendSuccess('Post successfully voted')
+        //     : $this->sendError('Error voting for post');
+    }
+
+
+    //  THIS FUNCTION counts the total upvotes/downvotes records from post_like table and posts them into the post table
+    function calculateUpvotes($post)
+    {
+
+        try {
+            // fetching total true vlaue upvotes from post_like table 
             $totalUpvotes = PostLike::where('post_id', $post->id)
-                ->where('update_status', true)->count();
+                ->where('upvote_status', true)->count();
 
-            $totalDownVotes = PostLike::where('post_id', $post->id)
+            $totalDownVotes = PostLike::where('post_id', $post->id)     // fetching total false value downvotes from post_like table
                 ->where('upvote_status', false)->count();
 
             $grossTotalVotes = $totalUpvotes - $totalDownVotes;
 
             if (
-                $post->update([
+                !$post->update([
                     'gross_votes' => $grossTotalVotes,
                     'upvotes' => $totalUpvotes,
                     'downvotes' => $totalDownVotes
@@ -252,12 +297,32 @@ class PostController extends RootController
                 return false;
             }
             return true;
-        });
-
-        return $result
-            ? $this->sendSuccess('Post successfully voted')
-            : $this->sendError('Erro votting for post');
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
-    public function getUpvotes() {}
+
+
+    public function getUpvotes($slug)
+    {
+
+        $post = Post::where('slug', $slug)->first();
+
+
+        $user =  Auth('sanctum')->user();
+        //  if user not logged in, dont send the user's votes on the picture_user value;
+        if (!$user) {
+            return $this->sendSuccess('Upvotes for post successfully fetched', 'post', ['post' => $post]);
+        }
+        $postLike = PostLike::where('post_id', $post->id)
+            ->where('user_id', $user->id)
+            ->first();
+        // return $postLike;
+
+        if (!$post) {
+            return $this->sendError('No such post found', 404);
+        }
+        return $this->sendSuccess('Upvotes for post successfully fetched', 'post', ['post' => $post, 'status' => $postLike]);
+    }
 }

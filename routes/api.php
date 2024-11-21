@@ -19,11 +19,24 @@ Route::middleware('auth:sanctum')->prefix('')->group(function () {
     });
 });
 
+// guest only routes
 Route::middleware('sanctumCustomGuest')->group(function () {
     Route::post('/register', action: [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
 });
 
+
+// open routes 
+
+Route::get('/posts', [PostController::class, 'index']);
+Route::get('post/{slug}', [PostController::class, 'show']);
+
+
+Route::get('/comment/{slug}', [CommentController::class, 'index']);
+
+
+Route::get('post/upvotes/{slug}', [PostController::class, 'getUpvotes']);       // get single post along with all its fields 
+// end of open routes
 
 
 
@@ -34,19 +47,17 @@ Route::middleware('auth:sanctum')->group(function () {
         return 'auth working';
     });
 
-
     // posts routes
-    Route::get('post/{slug}', [PostController::class, 'show']);
     Route::post('post', [PostController::class, 'store']);
     Route::put('post', [PostController::class, 'update']);
-    Route::delete('post', [PostController::class, 'destroy']);
+    Route::delete('post/{post}', [PostController::class, 'destroy']);
     Route::post('post/upvote', [PostController::class, 'upvote']);
 
     // comment routes
     Route::post('/comment', [CommentController::class, 'store']);
     // Route::post('/comment', function(Request $request){return $request->all();});
-    Route::put('/comment', [CommentController::class, 'update']);
-    Route::delete('/comment', [CommentController::class, 'destroy']);
+    Route::put('/comment/{id}', [CommentController::class, 'update']);
+    Route::delete('/comment/{comment}', [CommentController::class, 'destroy']);
     Route::post('/comment/upvote', [CommentController::class, 'upvote']);
 
     // Tag routes
@@ -59,16 +70,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Route model binding
 
-Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->middleware('auth:sanctum');
+// Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->middleware('auth:sanctum');
 
 
 // Post
 
-Route::get('/posts', [PostController::class, 'index']);
 
-
-
-
+############################################################################################################################# ###########################################################################
 
 /*
     Practice routes

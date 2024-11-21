@@ -22,7 +22,7 @@ return new class extends Migration
 
             $table->integer('gross_votes')->default(value: 0)->nullable();
             $table->integer('upvotes')->default(0)->nullable();
-            $table->integer('downVotes')->default(0)->nullable();
+            $table->integer('downvotes')->default(0)->nullable();
 
             $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
             $table->foreignIdFor(Tag::class)->nullable();

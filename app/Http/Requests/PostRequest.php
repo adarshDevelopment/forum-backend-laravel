@@ -22,8 +22,8 @@ class PostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|max:200|string',
-            'content' => 'required|',
+            'title' => request()->isMethod('post') ? 'required|max:200|string' : 'max:200|string',
+            'content' => 'required'
         ];
     }
 }

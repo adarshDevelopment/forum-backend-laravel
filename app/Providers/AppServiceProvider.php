@@ -26,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('authorize-user', function (Object $classObject) {
             // return true if post/comment user_id is equal to the currently logged in user
+            // return request()->user();
             return $classObject->user_id == request()->user()->id;
         });
 
