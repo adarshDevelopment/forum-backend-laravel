@@ -73,7 +73,11 @@ class PostController extends RootController
     {
 
 
-        $posts =  Post::orderBy('id', 'desc')->get();
+        $posts =  Post::orderBy('id', 'desc')
+            ->with('user')
+            ->with('comments')
+            ->with('postLike')
+            ->get();
 
 
 
@@ -194,7 +198,6 @@ class PostController extends RootController
         /*
                     Delete post pictures here
         */
-
         if (!$post->delete()) {
             return $this->sendError('Error deleting post');
         }
@@ -207,7 +210,8 @@ class PostController extends RootController
     public function upvote(Request $request)
     {
 
-        // function expects post_id/post slug, upvote/downvote
+        // function expects post_id/post slug, upvote/downvote 
+        // slug:slug, user: user.id, upvoteStatus: vote
 
         if ($this->user->id != $request->user) {        // checking if the user sending the request is the currently logged in user
             return $this->sendError('Unauthorized user', 403);
@@ -265,8 +269,8 @@ class PostController extends RootController
         if (!$result) {
             $this->sendError('Error voting for post');
         }
-
-        return $this->sendSuccess('Post successfully upvoted. here is the fetched post data', 'post', $post);
+        $post = Post::where('slug', $request->slug)->with('postLike')->first();
+        return $this->sendSuccess('Post successfully upvoted. here is the fetched post data', 'updatedPost', items: $post);
         // return $result
         //     ? $this->sendSuccess('Post successfully voted')
         //     : $this->sendError('Error voting for post');

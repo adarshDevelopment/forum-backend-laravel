@@ -30,7 +30,6 @@ class AuthController extends RootController
             'email' => 'email|unique:users',
             'name' => 'required|unique:users|string|max:255|min:8',
             'password' => 'required|confirmed|min:6|string|max:20'
-
         ]);
 
 
@@ -48,11 +47,47 @@ class AuthController extends RootController
             // return response()->json(['message' => 'Error creating user', 'status' => false]);
         }
 
+        dispatch(function () use ($user) {
+            $user->sendEmailVerificationNotification();
+        });
+
         // create and send token
         $token = $user->createToken($user->name);
         return $this->sendSuccess('User successfully registered from extension.', 'token', $token->plainTextToken);
         // return response()->json(['token' => $token->plainTextToken], 200);
     }
+
+    public function resendEmailVerification(Request $request)
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return $this->sendSuccess('The email is already verifeid');
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return $this->sendSuccess('Email verification successfully sent');
+    }
+
+    public function verifyEmail(Request $request, $id, $hash)
+    {
+        // hash vlaue contains the hashed email sent in the email content
+        $user = User::find($id);
+        if (!$user) {
+            return $this->sendError('No User found', statusCode: 400);
+        }
+        if ($user->hasVerifiedEmail()) {
+            return $this->sendSuccess('The email is already verifeid');
+        }
+
+        if (!hash_equals((string) $hash, sha1($user->email))) {
+            return $this->sendError('Invalid or expired verification link', statusCode: 403);
+        }
+        $user->markEmailAsVerified();
+        // or this
+        // $user->email_verified_at = Carbon::now();
+        return $this->sendSuccess(statusMessage: 'Email successfuilly verified');
+    }
+
 
     public function login(Request $request)
     {
@@ -60,7 +95,6 @@ class AuthController extends RootController
         // validate request
         $validatedFields = $request->validate([
             'email' => 'required|email',
-            'password' => 'required|min:6|max:32'
         ]);
 
         // check if user exists, if not or hash values dont match, send invalid credentials
@@ -81,7 +115,7 @@ class AuthController extends RootController
         // return $request->user() ? 'user found' : 'user not found'; 
         if ($request->user()?->tokens()->delete()) {
             return $this->sendSuccess('User successfully logged out');
-        } {
+        } else {
             return $this->sendError('Error logging out User', 500);
         }
     }

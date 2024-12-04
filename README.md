@@ -1,3 +1,11 @@
+Email verification mail:
+    $user->sendEmailVerificationNotification() is used to send the email to the user after registration.
+    the sendEmailVerificationNotification() is overridden in the User class to send a custom Notification through php artisan make:notification CustomNotification
+    after the has value is compared and if correct, it redirects the user to the react app url 
+
+
+
+
 1. Database
 
 1. user     -> done

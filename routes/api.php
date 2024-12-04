@@ -62,8 +62,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Tag routes
     Route::get('/tag', [TagController::class, 'index']);
-});
 
+
+    // Email verification routes:
+
+    // code to resend verificaiton code
+    Route::post('resendVerification', [AuthController::class, 'resendEmailVerification'])->middleware('throttle:6,1');
+    Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->withoutMiddleware('auth:sanctum');
+});
 
 
 
