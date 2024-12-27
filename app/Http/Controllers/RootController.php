@@ -2,10 +2,54 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\Post;
 use Illuminate\Http\Request;
 
 class RootController extends Controller
 {
+
+
+    public $notification;
+    /*
+        title: notification title (new comment, new post upvote)
+        user: the notifiable user
+        action: liked, upvoted, 
+        attribute: post or comment
+        post: the post instance
+        message instance: the user has liked you comment 
+
+        IS NOT USED ANYMORE
+     */
+
+
+    public function getNotificationList(
+        string $title,
+        User $interactor_user,
+        string $action = 'liked',
+        string $attribute,
+        $post = null
+    ): array {
+        return [
+            'title' => $title,
+            'message' => "{$interactor_user->name} has {$action} your {$attribute}",
+            'interactor_user' => $interactor_user,
+            'post' => $post
+
+        ];
+    }
+
+
+    public function getNotificationMessage(
+        User $interactorUser,
+        string $action = 'liked',
+        string $attribute
+    ){
+        return "{$interactorUser->name} has {$action} your {$attribute}";
+    }
+
+
+
     public function sendError($statusMessage, $statusCode = 500, $exceptionMessage = '',)
     {
         // if exception message does not exist, dont send key value

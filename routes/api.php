@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\TagController;
 use App\Http\Middleware\SanctumCustomMiddleware;
@@ -63,6 +64,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Tag routes
     Route::get('/tag', [TagController::class, 'index']);
 
+    // Notification route
+    Route::get('/notification/{userId}', [NotificationController::class, 'index']);
+    Route::post('/clickOnNotification', [NotificationController::class, 'clickOnNotification']);
 
     // Email verification routes:
 

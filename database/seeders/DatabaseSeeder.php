@@ -18,11 +18,29 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
         // Post::factory()->count(10)->create();
+        User::create([
+            'name' => 'John Cena',
+            'email' => 'john@cena.com',
+            'password' => 'tiger123'
+        ]);
 
+        User::create([
+            'name' => 'Randy Orton',
+            'email' => 'randy@orton.com',
+            'password' => 'tiger123'
+        ]);
 
-        Tag::factory(10)->create();
-        Post::factory()->count(10)->create();
-        Comment::factory(10)->create();
+        User::create([
+            'name' => 'Big Show',
+            'email' => 'big@show.com',
+            'password' => 'tiger123'
+        ]);
+        
+        
+
+        // Tag::factory(10)->create();
+        // Post::factory()->count(10)->create();
+        // Comment::factory(10)->create();
 
 
 

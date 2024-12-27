@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\UpdateNotification;
 use App\Http\Requests\PostRequest;
+use App\Jobs\DeleteNotificationJob;
+use App\Models\Notification;
 use App\Models\Post;
 use App\Models\PostLike;
 use Database\Seeders\PostSeeder;
@@ -48,16 +51,16 @@ class PostController extends RootController
 
     public function show($slug)
     {
-        $post = Post::where('slug', $slug)->first();
+        $post = Post::with(['commentsOrdered.user', 'commentsOrdered.commentLike'])->where('slug', $slug)->first();
         if (!$post) {
             return $this->sendError(statusMessage: 'Post not found', statusCode: 404);
         }
 
-        $comments = $post
-            ->comments()
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // $comments = $post
+        //     ->comments()
+        //     ->with('user')
+        //     ->orderBy('created_at', 'desc')
+        //     ->get();
 
         // return $comments->count();
 
@@ -65,7 +68,7 @@ class PostController extends RootController
             'post' => $post,
             'user' => $post->user,
             'tag' => $post->tag,
-            'comments' => $comments,
+            // 'comments' => $comments,
 
         ]);
     }
@@ -210,7 +213,7 @@ class PostController extends RootController
     public function upvote(Request $request)
     {
 
-        // function expects post_id/post slug, upvote/downvote 
+        // function expects post_id/post slug, upvoteStatus
         // slug:slug, user: user.id, upvoteStatus: vote
 
         if ($this->user->id != $request->user) {        // checking if the user sending the request is the currently logged in user
@@ -253,6 +256,16 @@ class PostController extends RootController
                         return false;
                     }
 
+                    // also delete the notification using Jobs
+                    if ($upvoteStatus) {
+                        dispatch(function () use ($post) {
+                            Notification::where('interactor_user_id', operator: $this->user->id)
+                                ->where('post_id', $post->id)
+                                ->delete();
+                        });
+                    }
+
+
                     // calculaate upvote and udpat evalues on post table
                     return $this->calculateUpvotes($post);
                 }
@@ -263,17 +276,33 @@ class PostController extends RootController
                 }
             }
 
-            return $this->calculateUpvotes($post);            // return true or false depending on the return value of calculateUvptes
+            // update the notifications table but only when the user upvotes the post
+            if ($upvoteStatus) {
+                $notificationMessage = $this->getNotificationMessage(interactorUser: $this->user, action: 'liked', attribute: 'post');
+                if (!Notification::create([
+                    'notification_type' => 'post',
+
+                    'title' => 'New Post Upvote',
+                    'message' => $notificationMessage,
+                    'interactor_user_id' => $this->user->id,
+                    'post_id' => $post->id,
+
+                    'notifiable_id' => $post->user->id,
+                ])) {
+                    return false;
+                }
+            }
+
+
+            return $this->calculateUpvotes(post: $post);            // return true or false depending on the return value of calculateUvptes
         });
 
         if (!$result) {
             $this->sendError('Error voting for post');
         }
         $post = Post::where('slug', $request->slug)->with('postLike')->first();
+
         return $this->sendSuccess('Post successfully upvoted. here is the fetched post data', 'updatedPost', items: $post);
-        // return $result
-        //     ? $this->sendSuccess('Post successfully voted')
-        //     : $this->sendError('Error voting for post');
     }
 
 

@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\UpdateNotification;
 use App\Http\Requests\CommentRequest;
 use App\Models\Comment;
 use App\Models\CommentLike;
+use App\Models\Notification;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -15,6 +17,8 @@ use Illuminate\Support\Facades\Log;
 class CommentController extends RootController
 {
     private $user;
+    private $currentComment;    // to return the recently stoerd comment to set new value to the state in react and to set this record as notification in notifications table
+    public $notification;
     public function __construct()
     {
         $this->user = auth('sanctum')->user();
@@ -49,44 +53,72 @@ class CommentController extends RootController
 
     public function store(CommentRequest $request)
     {
-        // return $request->all();
+
         $post = Post::where('slug', $request->slug)->first();
         if (!$post) {
             return $this->sendError('Post not found');
         }
 
-        // return $request->all(); 
-        // creating record from the currently logged in user=
-        // return $this->user;
-        // return $this->user->comments;
+        $result = DB::transaction(function () use ($request, $post) {
+            $this->currentComment = $this->user->comments()->create([
+                'comment' => $request->comment,
+                'post_id' => $post->id,
+                // 'user_id' => $this->user->id
+            ]);
 
-        // return $request->user()->comments()->create($request->all());
-        $comment = $this->user->comments()->create([
-            'comment' => $request->comment,
-            'post_id' => $post->id,
-            // 'user_id' => $this->user->id
-        ]);
+            if (!$this->currentComment) {
+                return false;
+            }
 
-        if (!$comment) {
+            if (!$this->calcualteUpvotes($this->currentComment)) {
+                return false;
+            }
+
+            // only send notification if thye comment was made by someone other than the original poster
+            if ($this->user->id !== $post->user->id) {
+                $this->notification = Notification::create([
+                    'notification_type' => 'new_comment',
+                    'title' => 'New Comment',
+                    'message' => "{$this->user->name} has commented on your post",
+                    'interactor_user_id' => $this->user->id,
+                    'post_id' => $post->id,
+                    'comment_id' => $this->currentComment->id,
+                    'notifiable_id' => $post->user->id,
+
+                ]);
+                if (!$this->notification) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+        if (!$result) {
             return $this->sendError('Error posting comment');
         }
 
-        return $this->sendSuccess('Comment successfully posted');
+        $comment =  $this->currentComment->load(['user', 'commentLike']);       // nenwly added comment to send back through api response
+
+        // send notiification through reverb
+        dispatch(event(new UpdateNotification(notification: $this->notification)));
+        return $this->sendSuccess('Comment successfully posted', attribute: 'comment', items: $comment);
     }
 
 
     public function update(CommentRequest $request, $id)
     {
-        // return $request->all();
+
         $comment = $this->user->comments->find($id);
         if (!$comment) {
             return $this->sendError('Comment not found', 404);
         }
         $comment->comment = $request->comment;
-        if (!$comment->update()) {
+        $result = $comment->update();
+        if (!$result) {
             return $this->sendError('Error editing comment');
         }
-        return $this->sendSuccess('Comment successfully deleted');
+
+        return $this->sendSuccess('Comment successfully deleted', attribute: 'comment', items: $comment->load(['user', 'commentLike']));
     }
 
     // for alternate way of route model binding, check  PostController destroy function
@@ -103,8 +135,6 @@ class CommentController extends RootController
 
         return $this->sendSuccess('Comment successfully deleted');
     }
-
-
 
 
     public function upvote(Request $request)
@@ -155,7 +185,7 @@ class CommentController extends RootController
         });
 
         // fetching the new updated value of comment_like for fron-end
-        $comment = Comment::where('id', $request->comment_id)->with('commentLike')->first();
+        $comment = Comment::where('id', $request->comment_id)->with(['commentLike', 'user'])->first();
 
         return $result
             ? $this->sendSuccess('Comment successfully voted', 'updatedComment', $comment)

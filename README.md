@@ -4,6 +4,20 @@ Email verification mail:
     after the has value is compared and if correct, it redirects the user to the react app url 
 
 
+Notification steps:
+    1. after the post/comment is upvoted, relevant values to notifications table are inserted, updateNotification event is called
+    2. to start the reverb server: php artisan reverb:start
+        
+
+
+1. Broadcasting using Reverb
+    Medium blog: https://medium.com/@noor1yasser9/complete-guide-for-setting-up-reverb-with-laravel-11-broadcasting-2e62e14c05ed
+
+    steps:
+    1. first create an event, implement ShouldBrodcast  contract and return Channel instnace on the broadcastOn() method 
+    2. create Channel on the routes/channels.php file.
+        Channels are classes that CLIENTS SUBSCRIBE TO from the frontend to listen for events
+        can use private(authenticated channels), public and presense channel(used to track user typing while sending message, check online status)
 
 
 1. Database
@@ -87,8 +101,6 @@ Laravel Authnetication
 
 
 
-
-
     # Policies
 
        
@@ -104,5 +116,3 @@ Laravel Authnetication
     2. comments -> almost all done
     3. tags -> 
     4. 
-
-    readme file changed and committed

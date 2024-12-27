@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Events\UpdateNotification;
+use App\Listeners\SendNotification;
+use App\Listeners\UpdateDatabase;
 use App\Models\User;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -34,5 +38,14 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('laracast-gates', function (User $user, Object $classObject) {
             return $classObject->user->is($user);
         });
+
+        // Event::listen(
+        //     [
+        //         UpdateNotification::class => [
+        //             UpdateDatabase::class,
+        //             SendNotification::class
+        //         ]
+        //     ]
+        // );
     }
 }
