@@ -1,5 +1,6 @@
 <?php
 
+use App\Events\ChatEvent;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\NotificationController;
@@ -89,7 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
 ############################################################################################################################# ###########################################################################
 
 /*
-    Practice routes
+    Test routes
 */
 
 // Route::get('/user', function (Request $request) {
@@ -104,4 +105,13 @@ Route::get('/middlewareCheck', function (Request $request) {
 
 Route::get('/test', function (Request $request) {
     return response()->json(['hello' => 'world']);
+});
+
+Route::get('/broadcast', function () {
+    dispatch(function () {
+        // event(new ChatEvent('API john cena'));
+    });
+
+    broadcast(new ChatEvent('API john cena'));
+    return 'event executed';
 });

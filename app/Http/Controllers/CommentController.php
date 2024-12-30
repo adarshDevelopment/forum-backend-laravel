@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ChatEvent;
 use App\Events\UpdateNotification;
 use App\Http\Requests\CommentRequest;
 use App\Models\Comment;
@@ -100,7 +101,11 @@ class CommentController extends RootController
         $comment =  $this->currentComment->load(['user', 'commentLike']);       // nenwly added comment to send back through api response
 
         // send notiification through reverb
-        dispatch(event(new UpdateNotification(notification: $this->notification)));
+        // dispatch(event(new UpdateNotification(notification: $this->notification)));
+        // event(new ChatEvent());
+        dispatch(function () {
+            event(new ChatEvent('randy'));
+        });
         return $this->sendSuccess('Comment successfully posted', attribute: 'comment', items: $comment);
     }
 

@@ -6,8 +6,10 @@ Email verification mail:
 
 Notification steps:
     1. after the post/comment is upvoted, relevant values to notifications table are inserted, updateNotification event is called
-    2. to start the reverb server: php artisan reverb:start
-        
+    2. to start the reverb server: 
+                            php artisan reverb:start
+            to broadcast an event event/broadcast(new Event($someData));
+                event triggers the listeners whreas broadcast helper does not trigger any listeners
 
 
 1. Broadcasting using Reverb
