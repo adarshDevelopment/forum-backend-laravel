@@ -91,7 +91,6 @@ class CommentController extends RootController
                     return false;
                 }
             }
-
             return true;
         });
         if (!$result) {
@@ -100,12 +99,9 @@ class CommentController extends RootController
 
         $comment =  $this->currentComment->load(['user', 'commentLike']);       // nenwly added comment to send back through api response
 
-        // send notiification through reverb
-        // dispatch(event(new UpdateNotification(notification: $this->notification)));
-        // event(new ChatEvent());
-        dispatch(function () {
-            event(new ChatEvent('randy'));
-        });
+        if ($this->notification) {
+            broadcast(new UpdateNotification(notification: $this->notification));
+        }
         return $this->sendSuccess('Comment successfully posted', attribute: 'comment', items: $comment);
     }
 
@@ -213,7 +209,7 @@ class CommentController extends RootController
 
             $grossVotes = $totalUpvotes - $totalDownvotes;
 
-            Log::info('total upvotes: ' . $totalUpvotes . ' Total downvotes: ' . $totalDownvotes . ' gross votes: ' . $grossVotes);
+            // Log::info('total upvotes: ' . $totalUpvotes . ' Total downvotes: ' . $totalDownvotes . ' gross votes: ' . $grossVotes);
             $comment->update([
                 'gross_votes' => $grossVotes,
                 'upvotes' => $totalUpvotes,

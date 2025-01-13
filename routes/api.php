@@ -37,7 +37,7 @@ Route::get('post/{slug}', [PostController::class, 'show']);
 Route::get('/comment/{slug}', [CommentController::class, 'index']);
 
 
-Route::get('post/upvotes/{slug}', [PostController::class, 'getUpvotes']);       // get single post along with all its fields 
+Route::get('post/upvoteStatus/{slug}', [PostController::class, 'getUpvoteStatus']);       // get single post along with all its fields 
 // end of open routes
 
 
@@ -108,10 +108,11 @@ Route::get('/test', function (Request $request) {
 });
 
 Route::get('/broadcast', function () {
+    // event(new ChatEvent('API john cena'));
     dispatch(function () {
-        // event(new ChatEvent('API john cena'));
+        event(new ChatEvent('API john cena'));
     });
 
-    broadcast(new ChatEvent('API john cena'));
+    // broadcast(new ChatEvent('API john cena'));
     return 'event executed';
 });

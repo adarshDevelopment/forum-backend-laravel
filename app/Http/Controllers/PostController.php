@@ -2,21 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\UpdateNotification;
 use App\Http\Requests\PostRequest;
-use App\Jobs\DeleteNotificationJob;
 use App\Models\Notification;
 use App\Models\Post;
 use App\Models\PostLike;
-use Database\Seeders\PostSeeder;
-use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
-use Nette\Utils\Random;
 
 class PostController extends RootController
 {
@@ -213,15 +204,14 @@ class PostController extends RootController
     public function upvote(Request $request)
     {
 
-        // function expects post_id/post slug, upvoteStatus
-        // slug:slug, user: user.id, upvoteStatus: vote
+        // function expects post slug, user id and upvote status
 
+        // check if the user is logged in, redirect if not 
         if ($this->user->id != $request->user) {        // checking if the user sending the request is the currently logged in user
             return $this->sendError('Unauthorized user', 403);
         }
 
         // find the post. if not found, send 404
-        // $post = Post::find($request->slug);
         $post = Post::where('slug', $request->slug)->first();
         if (!$post) {
             $this->sendError('Post not found', 404);
@@ -233,7 +223,6 @@ class PostController extends RootController
         $likedRecord = PostLike::where('post_id', $post->id)
             ->where('user_id', $this->user->id)
             ->first();
-
 
         $result = DB::transaction(function () use ($likedRecord, $post, $upvoteStatus) {
             //  create new entry if no prior entry exists
@@ -292,24 +281,25 @@ class PostController extends RootController
                     return false;
                 }
             }
-
-
             return $this->calculateUpvotes(post: $post);            // return true or false depending on the return value of calculateUvptes
         });
 
         if (!$result) {
             $this->sendError('Error voting for post');
         }
-        $post = Post::where('slug', $request->slug)->with('postLike')->first();
 
-        return $this->sendSuccess('Post successfully upvoted. here is the fetched post data', 'updatedPost', items: $post);
+        $post = Post::where('slug', $request->slug)->with('postLike')->first();     // udpated post data
+        $postLike = PostLike::where('post_id', $post->id)
+            ->where('user_id', $this->user->id)
+            ->first();
+
+        return $this->sendSuccess('Post successfully upvoted. here is the fetched post data', 'updatedPost', items: ['post' => $post, 'postLike' => $postLike]);
     }
 
 
     //  THIS FUNCTION counts the total upvotes/downvotes records from post_like table and posts them into the post table
     function calculateUpvotes($post)
     {
-
         try {
             // fetching total true vlaue upvotes from post_like table 
             $totalUpvotes = PostLike::where('post_id', $post->id)
@@ -337,25 +327,25 @@ class PostController extends RootController
 
 
 
-    public function getUpvotes($slug)
+    public function getUpvoteStatus($slug)
     {
 
         $post = Post::where('slug', $slug)->first();
-
+        if (!$post) {
+            return $this->sendError('No such post found', 404);
+        }
 
         $user =  Auth('sanctum')->user();
         //  if user not logged in, dont send the user's votes on the picture_user value;
         if (!$user) {
-            return $this->sendSuccess('Upvotes for post successfully fetched', 'post', ['post' => $post]);
+            return $this->sendError('User not logged in', 500);
         }
+
         $postLike = PostLike::where('post_id', $post->id)
             ->where('user_id', $user->id)
             ->first();
         // return $postLike;
 
-        if (!$post) {
-            return $this->sendError('No such post found', 404);
-        }
-        return $this->sendSuccess('Upvotes for post successfully fetched', 'post', ['post' => $post, 'status' => $postLike]);
+        return $this->sendSuccess('Upvotes status post successfully fetched', 'upvoteStatus', items: $postLike);
     }
 }

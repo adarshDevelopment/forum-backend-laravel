@@ -6,7 +6,8 @@ use App\Models\Notification;
 use Illuminate\Http\Request;
 
 class NotificationController extends RootController
-{
+{   
+    // returns the notifications oaf the user. expects userId
     public function index($userId)
     {
         $notifications =   Notification::where('notifiable_id', $userId)
@@ -15,6 +16,7 @@ class NotificationController extends RootController
         return $this->sendSuccess(statusMessage: 'Notifications fetched successfully.', attribute: 'notifications', items: $notifications);
     }
 
+    // returns the seen notification. expects notificationId. sets the is_seen value to true 
     public function clickOnNotification(Request $request)
     {
         $notification = Notification::with('post')->find($request->notificationId);
