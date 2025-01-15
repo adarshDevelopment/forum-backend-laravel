@@ -20,10 +20,11 @@ Broadcast::channel('chat', function () {
     return true;
 });
 
-Broadcast::routes(attributes: ['middleware' => ['auth:sanctum']]);
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
+// Broadcast::routes();
 
 
 Broadcast::channel('update-notification.{userId}', function ($user, $userId) {
-    Log::info('inside channel');
+    Log::info(message: 'inside channel. wildcard id: ' . $userId . ' user instane id: ' . $user->id);
     return $user->id === (int) $userId; // $user is the current authenticated user inserted by Laravel
 });

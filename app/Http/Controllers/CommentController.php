@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Log;
 
 class CommentController extends RootController
 {
-    private $user;
+    public $user;
     private $currentComment;    // to return the recently stoerd comment to set new value to the state in react and to set this record as notification in notifications table
     public $notification;
     public function __construct()
@@ -100,7 +100,7 @@ class CommentController extends RootController
         $comment =  $this->currentComment->load(['user', 'commentLike']);       // nenwly added comment to send back through api response
 
         if ($this->notification) {
-            broadcast(new UpdateNotification(notification: $this->notification));
+            broadcast(new UpdateNotification(notification: $this->notification, user: $this->user));
         }
         return $this->sendSuccess('Comment successfully posted', attribute: 'comment', items: $comment);
     }

@@ -11,7 +11,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-
+use Illuminate\Support\Facades\Log;
 
 class UpdateNotification implements ShouldBroadcast
 {
@@ -20,9 +20,12 @@ class UpdateNotification implements ShouldBroadcast
 
     public Notification $notification;
 
-    public function __construct(Notification $notification)
+    public function __construct(Notification $notification, public $user)
     {
         $this->notification = $notification;
+        $this->user = $user;
+
+        // Log::info('inside UpdateNotification constructor. user->id: ' . $this->user->id);
     }
 
     /**
@@ -31,10 +34,18 @@ class UpdateNotification implements ShouldBroadcast
      * @return array<int, \Illuminate\Broadcasting\Channel>
      */
 
-    public function broadcastOn(): array
+    public function broadcastWith()
     {
         return [
-            new PrivateChannel('update-notification.' . auth(guard: 'sanctum')->user()->id),
+            'notification' => $this->notification
+        ];
+    }
+
+    public function broadcastOn(): array
+    {
+        // Log::info('inside UpdateNotification broadcastOn. user id: ' . $this->user->id);
+        return [
+            new PrivateChannel('update-notification.' . $this->notification->notifiable_id),
         ];
     }
 }
