@@ -22,6 +22,7 @@ class Notification extends Model
 
         'notifiable_id',
         'is_seen',
+        'is_read',
         'read_at'
     ];
 

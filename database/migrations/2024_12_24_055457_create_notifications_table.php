@@ -28,6 +28,7 @@ return new class extends Migration
 
             $table->unsignedBigInteger('notifiable_id');
             $table->boolean(column: 'is_seen')->default(false);
+            $table->boolean(column: 'is_read')->default(false);
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
 

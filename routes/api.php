@@ -67,7 +67,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Notification route
     Route::get('/notification/{userId}', [NotificationController::class, 'index']);
-    Route::post('/clickOnNotification', [NotificationController::class, 'clickOnNotification']);
+    Route::post('/resetNotificationCount', [NotificationController::class, 'resetNotificationCount']);
+
+    Route::post('/markNotificationAsRead', [NotificationController::class, 'markNotificationAsRead']);
+
 
     // Email verification routes:
 

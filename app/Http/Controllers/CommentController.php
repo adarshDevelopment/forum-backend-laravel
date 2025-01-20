@@ -91,17 +91,20 @@ class CommentController extends RootController
                     return false;
                 }
             }
+
             return true;
         });
         if (!$result) {
             return $this->sendError('Error posting comment');
         }
 
-        $comment =  $this->currentComment->load(['user', 'commentLike']);       // nenwly added comment to send back through api response
-
         if ($this->notification) {
-            broadcast(new UpdateNotification(notification: $this->notification, user: $this->user));
+            $notification = Notification::with(['post' => function ($query) {
+                $query->select('id', 'slug');
+            }])->find($this->notification->id);
+            broadcast(new UpdateNotification(notification: $notification, user: $this->user));
         }
+        $comment =  $this->currentComment->load(['user', 'commentLike']);       // nenwly added comment to send back through api response
         return $this->sendSuccess('Comment successfully posted', attribute: 'comment', items: $comment);
     }
 

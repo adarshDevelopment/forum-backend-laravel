@@ -18,26 +18,22 @@ class UpdateNotification implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
 
-    public Notification $notification;
+    // public $notification;
 
-    public function __construct(Notification $notification, public $user)
+    public function __construct(public $notification, public $user)
     {
         $this->notification = $notification;
         $this->user = $user;
 
-        // Log::info('inside UpdateNotification constructor. user->id: ' . $this->user->id);
+        // Log::debug('inside UpdateNotification notification count ' . $this->notificationCount);
+        // Log::debug('inside UpdateNotification notification: ' . $this->notification);
     }
-
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
 
     public function broadcastWith()
     {
         return [
-            'notification' => $this->notification
+            'notification' => $this->notification,
+            // 'hello' => 'world'
         ];
     }
 

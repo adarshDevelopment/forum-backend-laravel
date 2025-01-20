@@ -25,6 +25,6 @@ Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 
 Broadcast::channel('update-notification.{userId}', function ($user, $userId) {
-    Log::info(message: 'inside channel. wildcard id: ' . $userId . ' user instane id: ' . $user->id);
+    // Log::info(message: 'inside channel. wildcard id: ' . $userId . ' user instane id: ' . $user->id);
     return $user->id === (int) $userId; // $user is the current authenticated user inserted by Laravel
 });
