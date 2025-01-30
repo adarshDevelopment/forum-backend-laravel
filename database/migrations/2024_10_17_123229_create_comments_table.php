@@ -22,7 +22,7 @@ return new class extends Migration
             $table->integer('downvotes')->default(0)->nullable();
 
             $table->foreignIdFor(Post::class);
-            $table->foreignIdFor(User::class);
+            $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

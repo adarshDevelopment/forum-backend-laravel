@@ -112,6 +112,7 @@ class AuthController extends RootController
 
     public function logout(Request $request)
     {
+       
         // return $request->user() ? 'user found' : 'user not found'; 
         if ($request->user()?->tokens()->delete()) {
             return $this->sendSuccess('User successfully logged out');

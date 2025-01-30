@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 
+
+
+
 // Session routes: protected 
 Route::middleware('auth:sanctum')->prefix('')->group(function () {
     Route::get('/user', [AuthController::class, 'getUser']);
@@ -35,7 +38,6 @@ Route::get('post/{slug}', [PostController::class, 'show']);
 
 
 Route::get('/comment/{slug}', [CommentController::class, 'index']);
-
 
 Route::get('post/upvoteStatus/{slug}', [PostController::class, 'getUpvoteStatus']);       // get single post along with all its fields 
 // end of open routes
@@ -70,6 +72,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/resetNotificationCount', [NotificationController::class, 'resetNotificationCount']);
 
     Route::post('/markNotificationAsRead', [NotificationController::class, 'markNotificationAsRead']);
+
+    // Profile routes
+    
 
 
     // Email verification routes:
