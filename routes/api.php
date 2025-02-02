@@ -3,6 +3,7 @@
 use App\Events\ChatEvent;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\TagController;
@@ -73,8 +74,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/markNotificationAsRead', [NotificationController::class, 'markNotificationAsRead']);
 
-    // Profile routes
-    
+    // Dashboard profile routes
+
 
 
     // Email verification routes:
@@ -83,7 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('resendVerification', [AuthController::class, 'resendEmailVerification'])->middleware('throttle:6,1');
     Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->withoutMiddleware('auth:sanctum');
 });
-
+Route::get('/dashboard/index/{id}', [DashboardController::class, 'index']);
 
 
 

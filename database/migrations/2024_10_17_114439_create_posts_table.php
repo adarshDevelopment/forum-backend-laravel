@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('slug')->unique();
             $table->string('title');
-            $table->text('content');
+            $table->text('content')->nullable();
             $table->boolean('picture_exists')->default(0);
 
             $table->integer('gross_votes')->default(value: 0)->nullable();

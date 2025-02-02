@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialiteController extends Controller
@@ -35,7 +36,7 @@ class SocialiteController extends Controller
         try {
             DB::beginTransaction();
             $googleUser =  Socialite::driver('google')->user();   // capture the authenticated user
-
+            Log::debug('inside UpdateNotification notification: ' . $googleUser->avatar);
             // create or update the table   
             $user = User::updateOrCreate(
                 [
@@ -54,8 +55,7 @@ class SocialiteController extends Controller
             DB::commit();
             // create token
             $token = $user->createToken($user->name);
-            return redirect('http://localhost:5173?token='. $token->plainTextToken);
-
+            return redirect('http://localhost:5173?token=' . $token->plainTextToken);
         } catch (\Exception $e) {
             DB::rollBack();
         }

@@ -18,3 +18,9 @@ Route::get('/test', function () {
 
 Route::get('auth/google/redirect', [SocialiteController::class, 'googleLogin'])->name('auth.google.redirect');
 Route::get('auth/google/callback', [SocialiteController::class, 'googleAuthnetication'])->name('auth.google.callback');
+
+
+Route::get('getTime', function(){
+    // return date_default_timezone_get();
+    return Date('Y-m-d H:i:s');
+} );
